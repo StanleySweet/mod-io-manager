@@ -4,6 +4,7 @@ interface CustomJWTPayload {
   userId: number;
   email: string;
   role: 'mod_signer' | 'admin';
+  nickname?: string;
 }
 
 /**

@@ -15,6 +15,7 @@ const config: { [key: string]: Knex.Config } = {
     migrations: {
       directory: join(__dirname, '..', 'database', 'migrations'),
       extension: 'ts',
+      loadExtensions: ['.ts'],
     },
     pool: {
       afterCreate: (conn: any, cb: any) => {
@@ -35,6 +36,7 @@ const config: { [key: string]: Knex.Config } = {
     migrations: {
       directory: join(__dirname, '..', 'database', 'migrations'),
       extension: 'js',
+      loadExtensions: ['.js'],
     },
     pool: {
       afterCreate: (conn: any, cb: any) => {

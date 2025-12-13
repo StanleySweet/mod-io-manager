@@ -17,7 +17,6 @@ export default async function modsRoutes(fastify: FastifyInstance) {
     modsScope.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const db = getDB();
-      const { role } = request.user!;
       const { outdated } = (request.query as { outdated?: string }) || {};
 
       // Base query joining mods with their current version
