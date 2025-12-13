@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply antialiased;
+    background-color: rgb(249 250 251);
+    color: rgb(17 24 39);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  a {
+    transition-property: color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 text-white rounded-lg transition-colors font-medium shadow-md hover:shadow-lg;
+    background-color: rgb(154, 51, 52);
+  }
+
+  .btn-primary:hover {
+    background-color: rgb(122, 39, 40);
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 rounded-lg transition-colors font-medium;
+    background-color: rgb(229 231 235);
+    color: rgb(31 41 55);
+  }
+
+  .btn-secondary:hover {
+    background-color: rgb(209 213 219);
+  }
+
+  .btn-danger {
+    @apply px-4 py-2 text-white rounded-lg transition-colors font-medium;
+    background-color: rgb(220 38 38);
+  }
+
+  .btn-danger:hover {
+    background-color: rgb(185 28 28);
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-transparent transition-all;
+    border-color: rgb(209 213 219);
+  }
+
+  .input-field:focus {
+    ring: 2px rgb(230 126 31);
+  }
+
+  .card {
+    @apply rounded-lg p-6;
+    background-color: white;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+}

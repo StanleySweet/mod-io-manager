@@ -1,0 +1,51 @@
+meta {
+  name: Login
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{backend_url}}{{api_prefix}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "admin@example.com",
+    "password": "SecurePass123!"
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Response has token", function() {
+    expect(res.getBody()).to.have.property('token');
+    expect(res.getBody().token).to.be.a('string');
+  });
+
+  test("Response has user object", function() {
+    const user = res.getBody().user;
+    expect(user).to.have.property('id');
+    expect(user).to.have.property('email');
+    expect(user).to.have.property('role');
+  });
+
+  test("User role is correct", function() {
+    expect(['admin', 'mod_signer']).to.include(res.getBody().user.role);
+  });
+}
+
+script:post-response {
+  // Save token for authenticated requests
+  if (res.getStatus() === 200) {
+    bru.setEnvVar("auth_token", res.getBody().token);
+  }
+}

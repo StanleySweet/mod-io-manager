@@ -1,0 +1,34 @@
+meta {
+  name: Test Unauthorized Access
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{backend_url}}{{api_prefix}}/admin/users
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "hacker@example.com",
+    "password": "HackerPass123!",
+    "role": "admin"
+  }
+}
+
+tests {
+  test("Status code is 401", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+
+  test("Response has error", function() {
+    expect(res.getBody()).to.have.property('error');
+    expect(res.getBody().error).to.equal('Unauthorized');
+  });
+}

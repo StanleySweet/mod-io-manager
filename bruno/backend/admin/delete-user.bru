@@ -1,0 +1,26 @@
+meta {
+  name: Delete User
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{backend_url}}{{api_prefix}}/admin/users/{{created_user_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Response confirms deletion", function() {
+    expect(res.getBody()).to.have.property('message');
+    expect(res.getBody().message).to.include('deleted');
+  });
+}

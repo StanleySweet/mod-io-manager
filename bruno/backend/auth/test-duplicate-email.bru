@@ -1,0 +1,40 @@
+meta {
+  name: Test Duplicate Email
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{backend_url}}{{api_prefix}}/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "admin@example.com",
+    "password": "AnotherPass789!"
+  }
+}
+
+docs {
+  # Test Duplicate Registration
+  
+  This should fail if admin@example.com was already registered.
+  Expects 409 Conflict status.
+}
+
+tests {
+  test("Status code is 409", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("Response has error message", function() {
+    expect(res.getBody()).to.have.property('error');
+    expect(res.getBody().error).to.include('Email');
+  });
+}

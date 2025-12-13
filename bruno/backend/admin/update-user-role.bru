@@ -1,0 +1,36 @@
+meta {
+  name: Update User Role
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{backend_url}}{{api_prefix}}/admin/users/{{created_user_id}}/role
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "role": "admin"
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Response confirms role update", function() {
+    expect(res.getBody()).to.have.property('role');
+    expect(res.getBody().role).to.equal('admin');
+  });
+}

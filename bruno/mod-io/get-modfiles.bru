@@ -1,0 +1,36 @@
+meta {
+  name: Get All Files for a Mod
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{url}}/games/:game_id/mods/:mod_id/files?api_key={{api_key}}&_limit={{modio_limit}}&_offset={{modio_offset}}
+  body: none
+  auth: none
+}
+
+params:path {
+  game_id: {{game_id}}
+  mod_id: {{mod_id}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has data array", function() {
+    expect(res.getBody().data).to.be.an('array');
+  });
+  
+  test("First modfile has required fields", function() {
+    const modfile = res.getBody().data[0];
+    expect(modfile).to.have.property('id');
+    expect(modfile).to.have.property('mod_id');
+    expect(modfile).to.have.property('version');
+    expect(modfile).to.have.property('date_added');
+    expect(modfile).to.have.property('filehash');
+    expect(modfile.filehash).to.have.property('md5');
+  });
+}

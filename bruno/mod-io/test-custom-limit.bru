@@ -1,0 +1,25 @@
+meta {
+  name: Get Mods with Custom Limit
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{url}}/games/:game_id/mods?api_key={{api_key}}&_limit=50&_offset=0
+  body: none
+  auth: none
+}
+
+params:path {
+  game_id: {{game_id}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Result limit is 50", function() {
+    expect(res.getBody().result_limit).to.equal(50);
+  });
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Test Pagination (Get Page 2)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{url}}/games/:game_id/mods?api_key={{api_key}}&_limit={{modio_limit}}&_offset=100
+  body: none
+  auth: none
+}
+
+params:path {
+  game_id: {{game_id}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Offset is correctly set to 100", function() {
+    expect(res.getBody().result_offset).to.equal(100);
+  });
+}

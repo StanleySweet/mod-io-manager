@@ -1,0 +1,32 @@
+meta {
+  name: Register Mod Signer
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{backend_url}}{{api_prefix}}/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "signer@example.com",
+    "password": "ModSignerPass456!"
+  }
+}
+
+tests {
+  test("Status code is 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("Response has userId", function() {
+    expect(res.getBody()).to.have.property('userId');
+  });
+}

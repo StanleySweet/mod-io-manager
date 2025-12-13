@@ -1,0 +1,22 @@
+meta {
+  name: Test Invalid API Key
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{url}}/games/:game_id/mods?api_key=invalid_key_test_12345&_limit={{modio_limit}}
+  body: none
+  auth: none
+}
+
+params:path {
+  game_id: {{game_id}}
+}
+
+tests {
+  test("Status code should be 401 or 403", function() {
+    const status = res.getStatus();
+    expect([401, 403]).to.include(status);
+  });
+}

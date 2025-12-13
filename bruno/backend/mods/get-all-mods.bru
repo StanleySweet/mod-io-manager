@@ -1,0 +1,55 @@
+meta {
+  name: Get All Mods
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{backend_url}}{{api_prefix}}/mods
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Response has mods array", function() {
+    expect(res.getBody()).to.have.property('mods');
+    expect(res.getBody().mods).to.be.an('array');
+  });
+
+  test("Mods have required fields", function() {
+    if (res.getBody().mods.length > 0) {
+      const mod = res.getBody().mods[0];
+      expect(mod).to.have.property('id');
+      expect(mod).to.have.property('name');
+      expect(mod).to.have.property('mod_io_url');
+      expect(mod).to.have.property('latest_version');
+      expect(mod).to.have.property('is_signed');
+      expect(mod).to.have.property('version_count');
+      expect(mod).to.have.property('status');
+      expect(mod).to.have.property('filesize');
+    }
+  });
+  
+  test("Status values are valid", function() {
+    if (res.getBody().mods.length > 0) {
+      const mod = res.getBody().mods[0];
+      // Status: 0=Pending, 1=Live, 3=Archived
+      expect([0, 1, 3]).to.include(mod.status);
+    }
+  });
+}
+
+script:post-response {
+  // Save first mod ID for subsequent tests
+  if (res.getStatus() === 200 && res.getBody().mods.length > 0) {
+    bru.setEnvVar("test_mod_id", res.getBody().mods[0].id);
+  }
+}

@@ -1,0 +1,33 @@
+meta {
+  name: Test Invalid Email
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{backend_url}}{{api_prefix}}/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "invalid-email",
+    "password": "SecurePass123!"
+  }
+}
+
+tests {
+  test("Status code is 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("Response has validation error", function() {
+    expect(res.getBody()).to.have.property('error');
+    expect(res.getBody().error).to.include('Validation');
+  });
+}

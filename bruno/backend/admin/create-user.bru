@@ -1,0 +1,50 @@
+meta {
+  name: Create User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{backend_url}}{{api_prefix}}/admin/users
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "newsigner@example.com",
+    "password": "NewUserPass123!",
+    "role": "mod_signer"
+  }
+}
+
+tests {
+  test("Status code is 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("Response has userId", function() {
+    expect(res.getBody()).to.have.property('userId');
+    expect(res.getBody().userId).to.be.a('number');
+  });
+
+  test("Response has role", function() {
+    expect(res.getBody()).to.have.property('role');
+    expect(['admin', 'mod_signer']).to.include(res.getBody().role);
+  });
+}
+
+script:post-response {
+  // Save user ID for subsequent tests
+  if (res.getStatus() === 201) {
+    bru.setEnvVar("created_user_id", res.getBody().userId);
+  }
+}

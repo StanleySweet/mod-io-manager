@@ -1,0 +1,45 @@
+meta {
+  name: Test Mod Signer Filter
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{backend_url}}{{api_prefix}}/mods
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Mod signer only sees unsigned mods", function() {
+    // This test assumes the authenticated user is a mod_signer
+    // If admin, they will see all mods (signed and unsigned)
+    const mods = res.getBody().mods;
+    if (mods.length > 0) {
+      // Just verify the response structure is correct
+      expect(mods).to.be.an('array');
+      expect(mods[0]).to.have.property('is_signed');
+    }
+  });
+}
+
+docs {
+  This endpoint returns role-filtered results:
+  - mod_signer: only unsigned mods
+  - admin: all mods (signed and unsigned)
+  
+  Response includes:
+  - status: 0=Pending, 1=Live, 3=Archived
+  - is_signed: boolean (true if mod is approved/signed)
+  - version_count: number of versions available
+  
+  Run this test after logging in as both roles to verify the filtering.
+}

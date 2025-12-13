@@ -1,0 +1,45 @@
+meta {
+  name: Parse Modfile Response Structure
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{url}}/games/:game_id/mods?api_key={{api_key}}&_limit=1
+  body: none
+  auth: none
+}
+
+params:path {
+  game_id: {{game_id}}
+}
+
+tests {
+  test("First mod has complete modfile structure", function() {
+    const mod = res.getBody().data[0];
+    const modfile = mod.modfile;
+    
+    expect(modfile).to.have.property('id');
+    expect(modfile).to.have.property('version');
+    expect(modfile).to.have.property('date_added');
+    expect(modfile).to.have.property('filesize');
+    expect(modfile).to.have.property('filehash');
+    expect(modfile.filehash).to.have.property('md5');
+  });
+
+  test("Modfile version is a string", function() {
+    const modfile = res.getBody().data[0].modfile;
+    expect(modfile.version).to.be.a('string');
+  });
+
+  test("Modfile date_added is a number (unix timestamp)", function() {
+    const modfile = res.getBody().data[0].modfile;
+    expect(modfile.date_added).to.be.a('number');
+  });
+
+  test("Modfile md5 is a non-empty string", function() {
+    const modfile = res.getBody().data[0].modfile;
+    expect(modfile.filehash.md5).to.be.a('string');
+    expect(modfile.filehash.md5).to.have.lengthOf(32);
+  });
+}

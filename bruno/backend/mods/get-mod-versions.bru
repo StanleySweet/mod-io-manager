@@ -1,0 +1,53 @@
+meta {
+  name: Get Mod Versions
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{backend_url}}{{api_prefix}}/mods/{{test_mod_id}}/versions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Response has mod info", function() {
+    expect(res.getBody()).to.have.property('mod');
+    expect(res.getBody().mod).to.have.property('id');
+    expect(res.getBody().mod).to.have.property('name');
+  });
+
+  test("Response has versions array", function() {
+    expect(res.getBody()).to.have.property('versions');
+    expect(res.getBody().versions).to.be.an('array');
+  });
+
+  test("Versions have required fields", function() {
+    if (res.getBody().versions.length > 0) {
+      const version = res.getBody().versions[0];
+      expect(version).to.have.property('id');
+      expect(version).to.have.property('version');
+      expect(version).to.have.property('is_signed');
+      expect(version).to.have.property('is_current');
+      expect(version).to.have.property('md5');
+    }
+  });
+}
+
+script:post-response {
+  // Save first unsigned version ID for signing test
+  if (res.getStatus() === 200 && res.getBody().versions.length > 0) {
+    const unsignedVersion = res.getBody().versions.find(v => !v.is_signed);
+    if (unsignedVersion) {
+      bru.setEnvVar("test_version_id", unsignedVersion.id);
+    }
+  }
+}

@@ -1,0 +1,43 @@
+meta {
+  name: Register User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{backend_url}}{{api_prefix}}/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "admin@example.com",
+    "password": "SecurePass123!"
+  }
+}
+
+docs {
+  # Register User
+  
+  All users are registered as 'mod_signer' by default.
+  Only existing admins can promote users to 'admin' role via the admin endpoints.
+}
+
+tests {
+  test("Status code is 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("Response has userId", function() {
+    expect(res.getBody()).to.have.property('userId');
+  });
+
+  test("Response has success message", function() {
+    expect(res.getBody().message).to.be.a('string');
+  });
+}

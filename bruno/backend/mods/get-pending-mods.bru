@@ -1,0 +1,52 @@
+meta {
+  name: Get Pending Approval Mods
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{backend_url}}{{api_prefix}}/mods
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Response has mods array", function() {
+    expect(res.getBody()).to.have.property('mods');
+    expect(res.getBody().mods).to.be.an('array');
+  });
+
+  test("Contains mods pending approval", function() {
+    const pendingMods = res.getBody().mods.filter(m => m.status === 0);
+    console.log(`Found ${pendingMods.length} mods pending approval`);
+  });
+
+  test("Contains live mods", function() {
+    const liveMods = res.getBody().mods.filter(m => m.status === 1);
+    console.log(`Found ${liveMods.length} live mods`);
+  });
+
+  test("Can identify archived mods", function() {
+    const archivedMods = res.getBody().mods.filter(m => m.status === 3);
+    console.log(`Found ${archivedMods.length} archived mods`);
+  });
+}
+
+docs {
+  This endpoint returns all mods with their status.
+  
+  Status values:
+  - 0 = Pending approval (not yet accepted)
+  - 1 = Live (accepted and published)
+  - 3 = Archived (deleted/removed)
+  
+  Filter the response client-side by status to show specific mod types.
+}

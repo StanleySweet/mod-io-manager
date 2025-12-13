@@ -1,0 +1,36 @@
+meta {
+  name: Test Login Rate Limit
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{backend_url}}{{api_prefix}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "nonexistent@example.com",
+    "password": "WrongPassword123!"
+  }
+}
+
+docs {
+  # Test Rate Limiting
+  
+  Run this request 6+ times rapidly to trigger rate limiting.
+  After 5 failed attempts within 60 seconds, you should receive a 429 status code.
+}
+
+tests {
+  test("Status code is 401 or 429", function() {
+    const status = res.getStatus();
+    expect([401, 429]).to.include(status);
+  });
+}

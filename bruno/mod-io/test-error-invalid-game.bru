@@ -1,0 +1,21 @@
+meta {
+  name: Test Invalid Game ID
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{url}}/games/:gameId/mods?api_key={{api_key}}
+  body: none
+  auth: none
+}
+
+params:path {
+  gameId: 99999999
+}
+
+tests {
+  test("Status code should be 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

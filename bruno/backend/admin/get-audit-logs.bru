@@ -1,0 +1,39 @@
+meta {
+  name: Get Audit Logs
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{backend_url}}{{api_prefix}}/admin/audit-logs?page=1&limit=50
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 1
+  limit: 50
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Response has logs array", function() {
+    expect(res.getBody()).to.have.property('logs');
+    expect(res.getBody().logs).to.be.an('array');
+  });
+
+  test("Response has pagination", function() {
+    const pagination = res.getBody().pagination;
+    expect(pagination).to.have.property('page');
+    expect(pagination).to.have.property('limit');
+    expect(pagination).to.have.property('total');
+    expect(pagination).to.have.property('totalPages');
+  });
+}
