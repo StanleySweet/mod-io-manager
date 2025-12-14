@@ -18,8 +18,8 @@
     "typescript",
     "security"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Stanislas Daniel Claude Dolcini",
+  "license": "MIT",
   "dependencies": {
     "@fastify/autoload": "^5.10.0",
     "@fastify/cors": "^9.0.1",
