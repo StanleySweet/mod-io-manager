@@ -6,6 +6,7 @@ interface ModioMod {
   name: string;
   profile_url: string;
   status: number;
+  date_added: number;
   modfile: {
     id: number;
     version: string;
@@ -278,17 +279,14 @@ export async function syncModsFromModio(logger: any, triggeredByUserId?: number)
           }
         }
         
-        if (modFiles.length === 0) {
-          logger.warn(`Skipping mod ${modioMod.name} (ID: ${modioMod.id}) - no files available`);
-          continue;
+        // Sort by date_added descending (latest first) - only if there are files
+        if (modFiles.length > 0) {
+          modFiles.sort((a, b) => b.date_added - a.date_added);
         }
-
-        // Sort by date_added descending (latest first)
-        modFiles.sort((a, b) => b.date_added - a.date_added);
         
         // Determine active/current file from mod.io: prefer detailed mod info; fallback to list's modfile
         let activeFileId = (modioMod as any)?.modfile?.id ?? null;
-        if (!activeFileId) {
+        if (!activeFileId && modFiles.length > 0) {
           const modDetails = await fetchModDetails(modioMod.id);
           activeFileId = (modDetails as any)?.modfile?.id ?? null;
         }
@@ -299,8 +297,10 @@ export async function syncModsFromModio(logger: any, triggeredByUserId?: number)
 
           // If mod doesn't exist, create it
           if (!existingMod) {
-            const latestFile = modFiles[0]; // Files are sorted by date_added DESC
-            const uploadedAt = new Date(latestFile.date_added * 1000);
+            // Use latest file's upload date if available, otherwise use mod's creation date
+            const uploadedAt = modFiles.length > 0 
+              ? new Date(modFiles[0].date_added * 1000)
+              : new Date(modioMod.date_added * 1000);
 
             const [modId] = await trx('mods').insert({
               mod_io_id: modioMod.id,
@@ -311,11 +311,13 @@ export async function syncModsFromModio(logger: any, triggeredByUserId?: number)
             });
 
             existingMod = { id: modId, mod_io_id: modioMod.id, name: modioMod.name };
-            logger.info(`New mod added: ${modioMod.name} (ID: ${modioMod.id}) with ${modFiles.length} versions`);
+            const versionCount = modFiles.length > 0 ? modFiles.length : 0;
+            logger.info(`New mod added: ${modioMod.name} (ID: ${modioMod.id}) with ${versionCount} version${versionCount !== 1 ? 's' : ''}`);
           } else {
             // Update mod metadata
-            const latestFile = modFiles[0];
-            const uploadedAt = new Date(latestFile.date_added * 1000);
+            const uploadedAt = modFiles.length > 0 
+              ? new Date(modFiles[0].date_added * 1000)
+              : existingMod.last_uploaded_at;
             
             await trx('mods').where({ id: existingMod.id }).update({
               last_uploaded_at: uploadedAt,
@@ -332,7 +334,7 @@ export async function syncModsFromModio(logger: any, triggeredByUserId?: number)
           const existingFileIdMap = new Map(existingVersions.map(v => [v.mod_io_file_id, v]));
           const modIoFileIds = new Set(modFiles.map(f => f.id));
 
-          // Delete versions that no longer exist on mod.io
+          // Delete versions that no longer exist on mod.io (including when mod now has 0 files)
           let deletedVersionCount = 0;
           for (const existingVersion of existingVersions) {
             if (!modIoFileIds.has(existingVersion.mod_io_file_id)) {
@@ -341,64 +343,67 @@ export async function syncModsFromModio(logger: any, triggeredByUserId?: number)
             }
           }
 
-          // Reset all versions to is_current: false once before processing
-          // This avoids doing it multiple times in the loop
-          await trx('mod_versions')
-            .where({ mod_id: existingMod.id })
-            .update({ is_current: false });
-
-          // Process each modfile from mod.io
+          // Only process file versions if mod has files
           let newVersionCount = 0;
           let updatedVersionCount = 0;
-          
-          for (let i = 0; i < modFiles.length; i++) {
-            const modFile = modFiles[i];
-            const isLatest = i === 0; // First file is the latest (sorted by date DESC)
-            const isCurrent = activeFileId ? modFile.id === activeFileId : isLatest;
 
-            const version = modFile.version || modFile.filename?.replace(/\.zip$/i, '') || `v${modFile.id}`;
-            const uploadedAt = new Date(modFile.date_added * 1000);
-            const md5 = modFile.filehash?.md5 || '';
-            const isSigned = isModSigned(modFile.metadata_blob);
+          if (modFiles.length > 0) {
+            // Reset all versions to is_current: false once before processing
+            // This avoids doing it multiple times in the loop
+            await trx('mod_versions')
+              .where({ mod_id: existingMod.id })
+              .update({ is_current: false });
 
-            const existingVersion = existingFileIdMap.get(modFile.id);
+            // Process each modfile from mod.io
+            for (let i = 0; i < modFiles.length; i++) {
+              const modFile = modFiles[i];
+              const isLatest = i === 0; // First file is the latest (sorted by date DESC)
+              const isCurrent = activeFileId ? modFile.id === activeFileId : isLatest;
 
-            if (existingVersion) {
-              // Only update if something actually changed
-              const needsUpdate = 
-                existingVersion.is_signed !== isSigned ||
-                existingVersion.is_current !== isCurrent ||
-                existingVersion.md5 !== md5;
-              
-              if (needsUpdate) {
-                await trx('mod_versions')
-                  .where({ id: existingVersion.id })
-                  .update({
-                    is_signed: isSigned,
-                    is_current: isCurrent,
-                    md5: md5,
-                    checksum_hash: md5,
-                  });
+              const version = modFile.version || modFile.filename?.replace(/\.zip$/i, '') || `v${modFile.id}`;
+              const uploadedAt = new Date(modFile.date_added * 1000);
+              const md5 = modFile.filehash?.md5 || '';
+              const isSigned = isModSigned(modFile.metadata_blob);
+
+              const existingVersion = existingFileIdMap.get(modFile.id);
+
+              if (existingVersion) {
+                // Only update if something actually changed
+                const needsUpdate = 
+                  existingVersion.is_signed !== isSigned ||
+                  existingVersion.is_current !== isCurrent ||
+                  existingVersion.md5 !== md5;
                 
-                if (existingVersion.is_signed !== isSigned) {
-                  updatedVersionCount++;
+                if (needsUpdate) {
+                  await trx('mod_versions')
+                    .where({ id: existingVersion.id })
+                    .update({
+                      is_signed: isSigned,
+                      is_current: isCurrent,
+                      md5: md5,
+                      checksum_hash: md5,
+                    });
+                  
+                  if (existingVersion.is_signed !== isSigned) {
+                    updatedVersionCount++;
+                  }
                 }
-              }
-            } else{
-              // Insert new version
-              await trx('mod_versions').insert({
-                mod_id: existingMod.id,
-                mod_io_file_id: modFile.id,
-                version: version,
-                is_signed: isSigned,
-                uploaded_at: uploadedAt,
-                is_current: isCurrent,
-                md5: md5,
-                filesize: modFile.filesize || 0,
-                checksum_hash: md5,
-              });
+              } else {
+                // Insert new version
+                await trx('mod_versions').insert({
+                  mod_id: existingMod.id,
+                  mod_io_file_id: modFile.id,
+                  version: version,
+                  is_signed: isSigned,
+                  uploaded_at: uploadedAt,
+                  is_current: isCurrent,
+                  md5: md5,
+                  filesize: modFile.filesize || 0,
+                  checksum_hash: md5,
+                });
 
-              newVersionCount++;
+                newVersionCount++;
+              }
             }
           }
 
@@ -411,6 +416,9 @@ export async function syncModsFromModio(logger: any, triggeredByUserId?: number)
           }
           if (deletedVersionCount > 0) {
             details.push(`${deletedVersionCount} version${deletedVersionCount !== 1 ? 's' : ''} deleted`);
+          }
+          if (modFiles.length === 0 && deletedVersionCount === 0) {
+            details.push('no files available (possible spam)');
           }
 
           // Only create audit log if there were actual changes

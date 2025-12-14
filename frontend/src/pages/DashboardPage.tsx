@@ -321,7 +321,15 @@ export function DashboardPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {mod.version_count} version{mod.version_count !== 1 ? 's' : ''}
+                      {mod.version_count ? (
+                        <>
+                          {mod.version_count} version{mod.version_count !== 1 ? 's' : ''}
+                        </>
+                      ) : (
+                        <span className="inline-flex items-center rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                          ⚠ No files (spam?)
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <button
