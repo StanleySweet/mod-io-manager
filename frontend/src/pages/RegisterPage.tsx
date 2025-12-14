@@ -251,7 +251,7 @@ export function RegisterPage() {
             >
               mod-io-manager
             </a>
-            {' '}· Licensed under the{' '}
+            {' '}v1.1.0 · Licensed under the{' '}
             <a 
               href="https://opensource.org/licenses/MIT"
               target="_blank"

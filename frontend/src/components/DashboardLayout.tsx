@@ -287,6 +287,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 >
                   mod-io-manager
                 </a>
+                {' '}<span style={{ color: '#9ca3af' }}>v1.1.0</span>
               </p>
               <p style={{ margin: '0' }}>
                 Licensed under the{' '}
