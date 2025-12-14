@@ -232,6 +232,41 @@ export async function syncModsFromModio(logger: any, triggeredByUserId?: number)
     const modsFromModio = await fetchModsFromModio();
     logger.info(`Fetched ${modsFromModio.length} mods from mod.io`);
 
+    // Delete mods that no longer exist on mod.io (were deleted)
+    const modIoIds = modsFromModio.map(m => m.id);
+    
+    if (modIoIds.length > 0) {
+      // Get mods to delete before deleting them (for audit log)
+      const modsToDelete = await db('mods')
+        .whereNotIn('mod_io_id', modIoIds)
+        .select('id', 'mod_io_id', 'name');
+      
+      if (modsToDelete.length > 0) {
+        await db.transaction(async (trx) => {
+          const idsToDelete = modsToDelete.map(m => m.id);
+          
+          // Delete associated versions first (foreign key constraint)
+          await trx('mod_versions').whereIn('mod_id', idsToDelete).del();
+          
+          // Delete the mods
+          await trx('mods').whereIn('id', idsToDelete).del();
+          
+          // Log each deletion
+          for (const mod of modsToDelete) {
+            logger.info(`Deleted mod: ${mod.name} (mod_io_id: ${mod.mod_io_id}) - no longer exists on mod.io`);
+            
+            await trx('audit_logs').insert({
+              user_id: triggeredByUserId ?? null,
+              action: 'MODIO_SYNC',
+              resource: mod.mod_io_id.toString(),
+              details: `Deleted mod: ${mod.name} (mod_io_id: ${mod.mod_io_id}) - removed from mod.io`,
+              user_agent: 'modio-sync-service',
+            });
+          }
+        });
+      }
+    }
+
     for (const modioMod of modsFromModio) {
       try {
         // Start with the modfile from the mod list if available
