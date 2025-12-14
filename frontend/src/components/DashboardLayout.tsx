@@ -269,6 +269,42 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: '24px' }}>
         {children}
       </main>
+
+      {/* Footer */}
+      <footer style={{ backgroundColor: '#f9fafb', borderTop: '1px solid #e5e7eb', marginTop: '48px' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ fontSize: '13px', color: '#6b7280' }}>
+              <p style={{ margin: '0 0 4px 0' }}>
+                © 2025{' '}
+                <a 
+                  href="https://github.com/StanleySweet/mod-io-manager"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#9a3334', textDecoration: 'none', fontWeight: '500' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                  onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                >
+                  mod-io-manager
+                </a>
+              </p>
+              <p style={{ margin: '0' }}>
+                Licensed under the{' '}
+                <a 
+                  href="https://opensource.org/licenses/MIT"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#9a3334', textDecoration: 'none', fontWeight: '500' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                  onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                >
+                  MIT License
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

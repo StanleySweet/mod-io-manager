@@ -240,6 +240,29 @@ export function RegisterPage() {
               Privacy Policy
             </button>
           </p>
+          <p className="text-center text-xs text-gray-400 mt-4">
+            <a 
+              href="https://github.com/StanleySweet/mod-io-manager"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#9a3334', textDecoration: 'none' }}
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+            >
+              mod-io-manager
+            </a>
+            {' '}· Licensed under the{' '}
+            <a 
+              href="https://opensource.org/licenses/MIT"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#9a3334', textDecoration: 'none' }}
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+            >
+              MIT License
+            </a>
+          </p>
         </div>
       </div>
       </div>
