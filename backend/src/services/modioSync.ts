@@ -251,18 +251,8 @@ export async function syncModsFromModio(logger: any, triggeredByUserId?: number)
           // Delete the mods
           await trx('mods').whereIn('id', idsToDelete).del();
           
-          // Log each deletion
-          for (const mod of modsToDelete) {
-            logger.info(`Deleted mod: ${mod.name} (mod_io_id: ${mod.mod_io_id}) - no longer exists on mod.io`);
-            
-            await trx('audit_logs').insert({
-              user_id: triggeredByUserId ?? null,
-              action: 'MODIO_SYNC',
-              resource: mod.mod_io_id.toString(),
-              details: `Deleted mod: ${mod.name} (mod_io_id: ${mod.mod_io_id}) - removed from mod.io`,
-              user_agent: 'modio-sync-service',
-            });
-          }
+          // Log deletion summary
+          logger.info(`Deleted ${modsToDelete.length} mod(s) no longer on mod.io`);
         });
       }
     }
@@ -337,60 +327,102 @@ export async function syncModsFromModio(logger: any, triggeredByUserId?: number)
           // Get existing versions from database
           const existingVersions = await trx('mod_versions')
             .where({ mod_id: existingMod.id })
-            .select('mod_io_file_id', 'version', 'md5');
+            .select('id', 'mod_io_file_id', 'version', 'md5', 'is_signed', 'is_current');
 
-          const existingFileIds = new Set(existingVersions.map(v => v.mod_io_file_id));
+          const existingFileIdMap = new Map(existingVersions.map(v => [v.mod_io_file_id, v]));
+          const modIoFileIds = new Set(modFiles.map(f => f.id));
+
+          // Delete versions that no longer exist on mod.io
+          let deletedVersionCount = 0;
+          for (const existingVersion of existingVersions) {
+            if (!modIoFileIds.has(existingVersion.mod_io_file_id)) {
+              await trx('mod_versions').where({ id: existingVersion.id }).del();
+              deletedVersionCount++;
+            }
+          }
+
+          // Reset all versions to is_current: false once before processing
+          // This avoids doing it multiple times in the loop
+          await trx('mod_versions')
+            .where({ mod_id: existingMod.id })
+            .update({ is_current: false });
 
           // Process each modfile from mod.io
           let newVersionCount = 0;
+          let updatedVersionCount = 0;
+          
           for (let i = 0; i < modFiles.length; i++) {
             const modFile = modFiles[i];
             const isLatest = i === 0; // First file is the latest (sorted by date DESC)
             const isCurrent = activeFileId ? modFile.id === activeFileId : isLatest;
-
-            // Skip if we already have this file
-            if (existingFileIds.has(modFile.id)) {
-              continue;
-            }
 
             const version = modFile.version || modFile.filename?.replace(/\.zip$/i, '') || `v${modFile.id}`;
             const uploadedAt = new Date(modFile.date_added * 1000);
             const md5 = modFile.filehash?.md5 || '';
             const isSigned = isModSigned(modFile.metadata_blob);
 
-            // If this file should be marked current, mark all others as not current
-            if (isCurrent) {
-              await trx('mod_versions')
-                .where({ mod_id: existingMod.id })
-                .update({ is_current: false });
+            const existingVersion = existingFileIdMap.get(modFile.id);
+
+            if (existingVersion) {
+              // Only update if something actually changed
+              const needsUpdate = 
+                existingVersion.is_signed !== isSigned ||
+                existingVersion.is_current !== isCurrent ||
+                existingVersion.md5 !== md5;
+              
+              if (needsUpdate) {
+                await trx('mod_versions')
+                  .where({ id: existingVersion.id })
+                  .update({
+                    is_signed: isSigned,
+                    is_current: isCurrent,
+                    md5: md5,
+                    checksum_hash: md5,
+                  });
+                
+                if (existingVersion.is_signed !== isSigned) {
+                  updatedVersionCount++;
+                }
+              }
+            } else{
+              // Insert new version
+              await trx('mod_versions').insert({
+                mod_id: existingMod.id,
+                mod_io_file_id: modFile.id,
+                version: version,
+                is_signed: isSigned,
+                uploaded_at: uploadedAt,
+                is_current: isCurrent,
+                md5: md5,
+                filesize: modFile.filesize || 0,
+                checksum_hash: md5,
+              });
+
+              newVersionCount++;
             }
-
-            await trx('mod_versions').insert({
-              mod_id: existingMod.id,
-              mod_io_file_id: modFile.id,
-              version: version,
-              is_signed: isSigned,
-              uploaded_at: uploadedAt,
-              is_current: isCurrent,
-              md5: md5,
-              filesize: modFile.filesize || 0,
-              checksum_hash: md5,
-            });
-
-            newVersionCount++;
           }
 
+          const details = [];
           if (newVersionCount > 0) {
-            logger.info(`Added ${newVersionCount} new version(s) for ${modioMod.name}`);
+            details.push(`${newVersionCount} new version${newVersionCount !== 1 ? 's' : ''}`);
+          }
+          if (updatedVersionCount > 0) {
+            details.push(`${updatedVersionCount} signature${updatedVersionCount !== 1 ? 's' : ''} updated`);
+          }
+          if (deletedVersionCount > 0) {
+            details.push(`${deletedVersionCount} version${deletedVersionCount !== 1 ? 's' : ''} deleted`);
           }
 
-          await trx('audit_logs').insert({
-            user_id: triggeredByUserId ?? null,
-            action: 'MODIO_SYNC',
-            resource: modioMod.id.toString(),
-            details: `Synced mod: ${modioMod.name} (${newVersionCount} new version${newVersionCount !== 1 ? 's' : ''})`,
-            user_agent: 'modio-sync-service',
-          });
+          // Only create audit log if there were actual changes
+          if (details.length > 0) {
+            await trx('audit_logs').insert({
+              user_id: triggeredByUserId ?? null,
+              action: 'MODIO_SYNC',
+              resource: modioMod.id.toString(),
+              details: `Synced mod: ${modioMod.name} (${details.join(', ')})`,
+              user_agent: 'modio-sync-service',
+            });
+          }
         });
       } catch (error) {
         logger.error(
