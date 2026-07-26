@@ -259,67 +259,7 @@ export function ModVersionsPage() {
                 </tbody>
               </table>
             </div>
-            </div>
-            <div className="card overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Version History ({filteredVersions.length} version{filteredVersions.length !== 1 ? 's' : ''})
-                </h3>
-              </div>
-              
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Version</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Uploaded</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Size</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Signed</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Checksum</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredVersions
-                    .filter(v => !v.is_current)
-                    .sort((a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime())
-                    .map((version) => (
-                    <tr key={version.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-medium text-gray-900">{version.version}</span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {formatDate(version.uploaded_at)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {formatFileSize(version.filesize)}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        {version.is_signed ? (
-                          <div className="flex flex-col gap-1">
-                            <span className="text-green-600 font-medium">✓ Signed</span>
-                            {version.signature && (
-                              <code className="text-xs text-gray-500 break-all">
-                                {version.signature.substring(0, 16)}...
-                              </code>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-red-600 font-medium">✗ Unsigned</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {version.checksum_hash ? (
-                          <code className="text-xs text-gray-600 break-all">
-                            {version.checksum_hash.substring(0, 16)}...
-                          </code>
-                        ) : (
-                          <span className="text-gray-400 text-sm">N/A</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          </div>
           </>
         )}
       </div>

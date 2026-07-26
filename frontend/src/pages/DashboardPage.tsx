@@ -19,6 +19,15 @@ export function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const formatDate = (dateString?: string | null): string => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
   useEffect(() => {
     loadMods();
   }, []);
@@ -267,9 +276,10 @@ export function DashboardPage() {
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Update / Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase">Current</th>
                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase">Latest</th>
+                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase">Last Updated</th>
                   <th 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('signed')}
@@ -345,6 +355,9 @@ export function DashboardPage() {
                          )}
                        </div>
                      </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {formatDate(mod.last_uploaded_at)}
+                    </td>
                     <td className="px-6 py-4 text-sm">
                       {mod.is_signed ? (
                         <span className="text-green-700 font-medium">✓ Signed</span>
