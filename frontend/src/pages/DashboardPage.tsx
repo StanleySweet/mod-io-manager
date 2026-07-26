@@ -193,13 +193,14 @@ export function DashboardPage() {
                 key={filterValue}
                 onClick={() => {
                   setFilter(filterValue);
-                  setCurrentPage(1); // Reset to first page on filter change
-                  // Reload mods with the new filter
+                  setCurrentPage(1);
+                  // Re-fetch: outdated needs server-side filter, everything else gets all mods
                   (async () => {
                     setIsLoading(true);
                     try {
-                      const isOutdatedFilter = filterValue === 'outdated';
-                      const data = await modsService.getAllMods({ outdated: isOutdatedFilter });
+                      const data = await modsService.getAllMods(
+                        filterValue === 'outdated' ? { outdated: true } : undefined
+                      );
                       setMods(data);
                     } finally {
                       setIsLoading(false);
@@ -228,8 +229,8 @@ export function DashboardPage() {
                   : filterValue === 3
                   ? 'Archived'
                   : filterValue === 'needs-signing'
-                  ? `Needs Signing (${mods.filter(m => m.status === 1 && !m.is_signed).length})`
-                  : `Outdated only (${mods.filter(m => !!m.latest_version && !!m.current_version && m.latest_version !== m.current_version).length})`}
+                  ? `Needs Signing (${mods.filter(m => m.status === 1 && !m.is_signed && (!searchQuery || m.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.summary?.toLowerCase().includes(searchQuery.toLowerCase()))).length})`
+                  : `Outdated only (${mods.filter(m => !!m.latest_version && !!m.current_version && m.latest_version !== m.current_version && (!searchQuery || m.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.summary?.toLowerCase().includes(searchQuery.toLowerCase()))).length})`}
               </button>
             ))}
           </div>
@@ -276,7 +277,17 @@ export function DashboardPage() {
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Status
+                      {sortBy === 'status' && (
+                        <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase">Current</th>
                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase">Latest</th>
                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase">Last Updated</th>
