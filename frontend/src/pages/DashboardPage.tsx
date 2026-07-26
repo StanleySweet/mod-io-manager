@@ -21,11 +21,11 @@ export function DashboardPage() {
 
   const formatDate = (dateString?: string | null): string => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    const d = new Date(dateString);
+    const month = d.toLocaleDateString('en-US', { month: 'short' });
+    const day = d.getDate();
+    const year = String(d.getFullYear()).slice(2);
+    return `${month} ${day}, '${year}`;
   };
 
   useEffect(() => {
@@ -214,7 +214,7 @@ export function DashboardPage() {
                 }
                 title={
                   filterValue === 'needs-signing'
-                    ? 'Show live mods that are not signed and need fixing'
+                    ? 'Live mods that are not signed — need signing'
                     : filterValue === 'outdated'
                     ? 'Show only mods with updates available'
                     : undefined
@@ -267,7 +267,7 @@ export function DashboardPage() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase cursor-pointer hover:bg-gray-100"
+                    className="px-3 py-2 text-left text-xs font-medium text-gray-700 uppercase cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('name')}
                   >
                     <div className="flex items-center gap-2">
@@ -278,7 +278,7 @@ export function DashboardPage() {
                     </div>
                   </th>
                   <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase cursor-pointer hover:bg-gray-100"
+                    className="px-3 py-2 text-left text-xs font-medium text-gray-700 uppercase cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('status')}
                   >
                     <div className="flex items-center gap-2">
@@ -288,11 +288,11 @@ export function DashboardPage() {
                       )}
                     </div>
                   </th>
-                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase">Current</th>
-                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase">Latest</th>
-                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase">Last Updated</th>
+                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-800 uppercase">Current</th>
+                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-800 uppercase">Latest</th>
+                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-800 uppercase">Updated</th>
                   <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase cursor-pointer hover:bg-gray-100"
+                    className="px-3 py-2 text-left text-xs font-medium text-gray-700 uppercase cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('signed')}
                   >
                     <div className="flex items-center gap-2">
@@ -302,14 +302,14 @@ export function DashboardPage() {
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Versions</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Action</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-700 uppercase">Versions</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-700 uppercase"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {paginatedMods.map((mod) => (
                   <tr key={mod.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                    <td className="px-3 py-2 text-sm font-medium text-gray-900 truncate max-w-[200px]">
                       <a
                         href={(function () {
                           try {
@@ -331,68 +331,36 @@ export function DashboardPage() {
                         {mod.name}
                       </a>
                     </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="px-3 py-2 text-sm whitespace-nowrap">
                       {mod.status === 1 && !mod.is_signed ? (
                         getStatusBadge(mod.status, mod.is_signed)
                       ) : mod.status === 1 && mod.latest_version && mod.current_version && mod.latest_version !== mod.current_version ? (
-                        <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-wildfire-100 text-wildfire-800 border border-wildfire-200">
-                          Update available
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-wildfire-100 text-wildfire-800 border border-wildfire-200">
+                          Update
                         </span>
                       ) : (
                         getStatusBadge(mod.status, mod.is_signed)
                       )}
                     </td>
-                     <td className="px-6 py-4 text-sm text-gray-900">
-                       <div className="flex items-center gap-2">
-                         <span>{mod.current_version || '-'}</span>
-                         {mod.current_version && (
-                           <span
-                             className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium border ${
-                               mod.current_version === mod.latest_version
-                                 ? 'bg-wildfire-50 text-wildfire-700 border-wildfire-200'
-                                 : 'bg-amber-50 text-amber-800 border-amber-200'
-                             }`}
-                           >
-                             {mod.current_version === mod.latest_version ? 'Live' : 'Active'}
-                           </span>
-                         )}
-                       </div>
-                     </td>
-                     <td className="px-6 py-4 text-sm text-gray-900">
-                       <div className="flex items-center gap-2">
-                         <span>{mod.latest_version || '-'}</span>
-                         {mod.latest_version && (
-                           <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium border bg-blue-50 text-blue-800 border-blue-200">Latest</span>
-                         )}
-                       </div>
-                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {formatDate(mod.last_uploaded_at)}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap">{mod.current_version || '-'}</td>
+                    <td className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap">{mod.latest_version || '-'}</td>
+                    <td className="px-3 py-2 text-sm text-gray-600 whitespace-nowrap">{formatDate(mod.last_uploaded_at)}</td>
+                    <td className="px-3 py-2 text-sm whitespace-nowrap">
                       {mod.is_signed ? (
-                        <span className="text-green-700 font-medium">✓ Signed</span>
+                        <span className="text-green-700 font-medium">✓</span>
                       ) : (
-                        <span className="text-red-700 font-medium">✗ Unsigned</span>
+                        <span className="text-red-700 font-medium">✗</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {mod.version_count ? (
-                        <>
-                          {mod.version_count} version{mod.version_count !== 1 ? 's' : ''}
-                        </>
-                      ) : (
-                        <span className="inline-flex items-center rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-                          ⚠ No files (spam?)
-                        </span>
-                      )}
+                    <td className="px-3 py-2 text-sm text-gray-600 whitespace-nowrap">
+                      {mod.version_count || 0}
                     </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="px-3 py-2 text-sm">
                       <button
                         onClick={() => navigate(`/dashboard/mods/${mod.id}/versions`)}
-                        className="text-wildfire-600 hover:text-wildfire-700 font-medium"
+                        className="text-wildfire-600 hover:text-wildfire-700 font-medium text-xs"
                       >
-                        View Versions
+                        Versions
                       </button>
                     </td>
                   </tr>
