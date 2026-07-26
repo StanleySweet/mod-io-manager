@@ -10,7 +10,7 @@ export function DashboardPage() {
   const [mods, setMods] = useState<Mod[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState<0 | 1 | 3 | 'all' | 'outdated'>('all');
+  const [filter, setFilter] = useState<0 | 1 | 3 | 'all' | 'outdated' | 'needs-signing'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'status' | 'version' | 'signed'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -41,7 +41,16 @@ export function DashboardPage() {
     }
   };
 
-  const getStatusBadge = (status: 0 | 1 | 3) => {
+  const getStatusBadge = (status: 0 | 1 | 3, is_signed: boolean) => {
+    // Live + Unsigned = "Needs Signing" — this is a special combined category
+    if (status === 1 && !is_signed) {
+      return (
+        <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800 border border-orange-200">
+          Needs Signing
+        </span>
+      );
+    }
+
     const styles: Record<0 | 1 | 3, { bg: string; text: string; label: string }> = {
       0: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
       1: { bg: 'bg-green-100', text: 'text-green-800', label: 'Live' },
@@ -58,14 +67,19 @@ export function DashboardPage() {
   const filteredMods = useMemo(() => {
     let result = mods;
     
-    // Filter by status (excluding 'outdated' which is handled differently)
-    if (filter !== 'all' && filter !== 'outdated') {
+    // Filter by status (excluding 'outdated' and 'needs-signing' which are handled differently)
+    if (filter !== 'all' && filter !== 'outdated' && filter !== 'needs-signing') {
       result = result.filter(m => m.status === filter);
     }
     
     // Filter: only outdated
     if (filter === 'outdated') {
       result = result.filter(m => !!m.latest_version && !!m.current_version && m.latest_version !== m.current_version);
+    }
+    
+    // Filter: needs signing (Live + Unsigned)
+    if (filter === 'needs-signing') {
+      result = result.filter(m => m.status === 1 && !m.is_signed);
     }
     
     // Filter by search query
@@ -165,7 +179,7 @@ export function DashboardPage() {
 
           {/* Status Filter + Outdated Toggle */}
           <div className="flex gap-2 items-center flex-wrap">
-            {(['all', 0, 1, 3, 'outdated'] as const).map((filterValue) => (
+            {(['all', 0, 1, 3, 'needs-signing', 'outdated'] as const).map((filterValue) => (
               <button
                 key={filterValue}
                 onClick={() => {
@@ -188,9 +202,25 @@ export function DashboardPage() {
                     ? 'btn-primary'
                     : 'btn-secondary'
                 }
-                title={filterValue === 'outdated' ? 'Show only mods with updates available' : undefined}
+                title={
+                  filterValue === 'needs-signing'
+                    ? 'Show live mods that are not signed and need fixing'
+                    : filterValue === 'outdated'
+                    ? 'Show only mods with updates available'
+                    : undefined
+                }
               >
-                {filterValue === 'all' ? 'All' : filterValue === 0 ? 'Pending' : filterValue === 1 ? 'Live' : filterValue === 3 ? 'Archived' : `Outdated only (${mods.filter(m => !!m.latest_version && !!m.current_version && m.latest_version !== m.current_version).length})`}
+                {filterValue === 'all'
+                  ? 'All'
+                  : filterValue === 0
+                  ? 'Pending'
+                  : filterValue === 1
+                  ? 'Live'
+                  : filterValue === 3
+                  ? 'Archived'
+                  : filterValue === 'needs-signing'
+                  ? `Needs Signing (${mods.filter(m => m.status === 1 && !m.is_signed).length})`
+                  : `Outdated only (${mods.filter(m => !!m.latest_version && !!m.current_version && m.latest_version !== m.current_version).length})`}
               </button>
             ))}
           </div>
@@ -281,12 +311,14 @@ export function DashboardPage() {
                       </a>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      {mod.status === 1 && mod.latest_version && mod.current_version && mod.latest_version !== mod.current_version ? (
+                      {mod.status === 1 && !mod.is_signed ? (
+                        getStatusBadge(mod.status, mod.is_signed)
+                      ) : mod.status === 1 && mod.latest_version && mod.current_version && mod.latest_version !== mod.current_version ? (
                         <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-wildfire-100 text-wildfire-800 border border-wildfire-200">
                           Update available
                         </span>
                       ) : (
-                        getStatusBadge(mod.status)
+                        getStatusBadge(mod.status, mod.is_signed)
                       )}
                     </td>
                      <td className="px-6 py-4 text-sm text-gray-900">
