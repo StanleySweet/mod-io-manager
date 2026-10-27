@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getDB } from '../database/db.js';
 import { hashEmail } from '../utils/hash.js';
 import { hashPassword } from '../utils/password.js';
+import { generateApiKey } from '../utils/apiKey.js';
 import { authenticateJWT } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/requireRole.js';
 import { syncModsFromModio } from '../services/modioSync.js';
@@ -19,6 +20,10 @@ const CreateUserSchema = z.object({
 
 const UpdateRoleSchema = z.object({
   role: z.enum(['mod_signer', 'admin']),
+});
+
+const CreateApiKeySchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(255, 'Name must be at most 255 characters'),
 });
 
 export default async function adminRoutes(fastify: FastifyInstance) {
@@ -352,5 +357,125 @@ export default async function adminRoutes(fastify: FastifyInstance) {
         });
       }
     });
+
+    /**
+     * GET /api/admin/api-keys
+     * List API keys (admin only). key_hash is never returned.
+     */
+    adminScope.get('/api-keys', async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const db = getDB();
+        const keys = await db('api_keys')
+          .select('id', 'name', 'role', 'created_at', 'last_used_at', 'revoked_at')
+          .orderBy('created_at', 'desc');
+
+        return reply.status(200).send(keys);
+      } catch (error) {
+        request.log.error({ err: error }, 'Failed to fetch API keys');
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to fetch API keys',
+        });
+      }
+    });
+
+    /**
+     * POST /api/admin/api-keys
+     * Create an API key (admin only). The plaintext key is returned once; only its hash is stored.
+     */
+    adminScope.post('/api-keys', async (request: FastifyRequest, reply: FastifyReply) => {
+      const parseResult = CreateApiKeySchema.safeParse(request.body);
+
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: 'Validation Error',
+          message: parseResult.error.errors.map((e) => e.message).join(', '),
+        });
+      }
+
+      const { name } = parseResult.data;
+
+      try {
+        const db = getDB();
+        const plainKey = generateApiKey();
+        const keyHash = await hashPassword(plainKey);
+
+        const [keyId] = await db('api_keys').insert({ name, key_hash: keyHash });
+
+        // Audit log (never includes the key itself)
+        await db('audit_logs').insert({
+          user_id: request.user!.id,
+          action: 'CREATE_API_KEY',
+          resource: keyId.toString(),
+          details: `Created API key: ${name}`,
+          user_agent: request.headers['user-agent'] || 'unknown',
+        });
+
+        const created = await db('api_keys')
+          .where({ id: keyId })
+          .select('id', 'name', 'role', 'created_at', 'last_used_at', 'revoked_at')
+          .first();
+
+        reply.header('Cache-Control', 'no-store');
+        return reply.status(201).send({ ...created, key: plainKey });
+      } catch (error) {
+        request.log.error({ err: error }, 'Failed to create API key');
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to create API key',
+        });
+      }
+    });
+
+    /**
+     * Revoke an API key by id (sets revoked_at; the row is kept for audit).
+     */
+    const revokeApiKey = async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      const keyId = parseInt(id, 10);
+
+      if (isNaN(keyId)) {
+        return reply.status(400).send({
+          error: 'Validation Error',
+          message: 'Invalid API key ID',
+        });
+      }
+
+      try {
+        const db = getDB();
+        const key = await db('api_keys').where({ id: keyId }).first();
+        if (!key) {
+          return reply.status(404).send({
+            error: 'Not Found',
+            message: 'API key not found',
+          });
+        }
+
+        if (!key.revoked_at) {
+          await db('api_keys').where({ id: keyId }).update({ revoked_at: new Date() });
+
+          await db('audit_logs').insert({
+            user_id: request.user!.id,
+            action: 'REVOKE_API_KEY',
+            resource: keyId.toString(),
+            details: `Revoked API key: ${key.name}`,
+            user_agent: request.headers['user-agent'] || 'unknown',
+          });
+        }
+
+        return reply.status(200).send({
+          message: 'API key revoked successfully',
+        });
+      } catch (error) {
+        request.log.error({ err: error }, 'Failed to revoke API key');
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to revoke API key',
+        });
+      }
+    };
+
+    adminScope.post('/api-keys/:id/revoke', revokeApiKey);
+    adminScope.delete('/api-keys/:id', revokeApiKey);
   }, { prefix: '/admin' });
 }

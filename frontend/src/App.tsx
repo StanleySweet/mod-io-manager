@@ -7,6 +7,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ModVersionsPage } from './pages/ModVersionsPage';
 import { UsersPage } from './pages/UsersPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
+import { ApiKeysPage } from './pages/ApiKeysPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import './index.css';
@@ -50,6 +51,14 @@ function App() {
             element={
               <ProtectedRoute roles={['admin']}>
                 <AuditLogsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/api-keys"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <ApiKeysPage />
               </ProtectedRoute>
             }
           />
