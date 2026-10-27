@@ -8,6 +8,8 @@ import { ModVersionsPage } from './pages/ModVersionsPage';
 import { UsersPage } from './pages/UsersPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
 import { ApiKeysPage } from './pages/ApiKeysPage';
+import { AuditsPage } from './pages/AuditsPage';
+import { AuditDetailPage } from './pages/AuditDetailPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import './index.css';
@@ -59,6 +61,23 @@ function App() {
             element={
               <ProtectedRoute roles={['admin']}>
                 <ApiKeysPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/audits"
+            element={
+              <ProtectedRoute>
+                <AuditsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/audits/:id"
+            element={
+              <ProtectedRoute>
+                <AuditDetailPage />
               </ProtectedRoute>
             }
           />
