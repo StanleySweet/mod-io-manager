@@ -133,6 +133,8 @@ const reviewsPlugin: FastifyPluginAsync = async (fastify) => {
     const tasks = await db('queue_tasks')
       .where({ status: 'completed' })
       .where((q) => q.whereNull('review_status').orWhere('review_status', 'publish_failed'))
+      // OUTDATED / UNRELEASED: no key in use can sign them, nothing to decide
+      .whereRaw("json_extract(result, '$.verdict') NOT IN ('OUTDATED', 'UNRELEASED')")
       .orderBy('id');
 
     const reviews = [];

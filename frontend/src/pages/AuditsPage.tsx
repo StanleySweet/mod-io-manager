@@ -6,7 +6,7 @@ import { VerdictBadge } from '../components/VerdictBadge';
 import auditsService, { formatAuditDate } from '../services/auditsService';
 import type { AuditSummary, AuditVerdict, AuditStatus } from '../services/auditsService';
 
-const VERDICTS: AuditVerdict[] = ['SIGN', 'REFUSE', 'NEEDS_HUMAN', 'REPACKAGE'];
+const VERDICTS: AuditVerdict[] = ['SIGN', 'REFUSE', 'NEEDS_HUMAN', 'REPACKAGE', 'OUTDATED', 'UNRELEASED'];
 const STATUSES: AuditStatus[] = ['pending', 'claimed', 'completed', 'failed'];
 
 export function AuditsPage() {

@@ -4,7 +4,7 @@ import { authenticateJWT } from '../middleware/auth.js';
 import { requireModSigner } from '../middleware/requireRole.js';
 
 const STATUSES = ['pending', 'claimed', 'completed', 'failed'];
-const VERDICTS = ['SIGN', 'REFUSE', 'NEEDS_HUMAN', 'REPACKAGE'];
+const VERDICTS = ['SIGN', 'REFUSE', 'NEEDS_HUMAN', 'REPACKAGE', 'OUTDATED', 'UNRELEASED'];
 
 // Read inside SQLite: the list never pulls the multi-MB result into Node
 const VERDICT_SQL = "json_extract(queue_tasks.result, '$.verdict')";

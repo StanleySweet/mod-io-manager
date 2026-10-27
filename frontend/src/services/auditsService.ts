@@ -1,6 +1,6 @@
 import apiClient from './apiClient';
 
-export type AuditVerdict = 'SIGN' | 'REFUSE' | 'NEEDS_HUMAN' | 'REPACKAGE';
+export type AuditVerdict = 'SIGN' | 'REFUSE' | 'NEEDS_HUMAN' | 'REPACKAGE' | 'OUTDATED' | 'UNRELEASED';
 export type AuditStatus = 'pending' | 'claimed' | 'completed' | 'failed';
 
 // Dates come back as SQLite values: epoch milliseconds or text
