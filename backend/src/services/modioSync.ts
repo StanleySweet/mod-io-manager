@@ -440,6 +440,20 @@ export async function syncModsFromModio(logger: any, triggeredByUserId?: number)
       }
     }
 
+    // Queue one audit per current unsigned version; never re-queue a version (failed tasks need a human)
+    const queued = await db.raw(`
+      INSERT INTO queue_tasks (mod_id, mod_version_id, task_type)
+      SELECT mv.mod_id, mv.id, 'audit'
+      FROM mod_versions mv
+      JOIN mods m ON m.id = mv.mod_id
+      WHERE mv.is_current = 1 AND mv.is_signed = 0 AND mv.mod_io_file_id IS NOT NULL
+        AND m.status != 3
+        AND NOT EXISTS (SELECT 1 FROM queue_tasks q WHERE q.mod_version_id = mv.id)
+    `);
+    if (queued.changes > 0) {
+      logger.info(`Queued ${queued.changes} audit task${queued.changes !== 1 ? 's' : ''}`);
+    }
+
     logger.info('Mod.io sync completed successfully');
   } catch (error) {
     logger.error({ err: error }, `Mod.io sync failed: ${error instanceof Error ? error.message : String(error)}`);
