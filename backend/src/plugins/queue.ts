@@ -10,7 +10,7 @@ import crypto from 'crypto';
 
 const queuePlugin: FastifyPluginAsync = async (fastify) => {
   await fastify.register(multipart, {
-    limits: { fileSize: 1024 * 1024 * 1024 }, // 1GB
+    limits: { fileSize: 1024 * 1024 * 1024, fieldSize: 64 * 1024 * 1024 }, // 1GB zip, reports list every zip entry
   });
 
   // GET /api/v1/queue/next - claim next pending task
