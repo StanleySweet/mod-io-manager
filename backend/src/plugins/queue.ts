@@ -17,7 +17,8 @@ const queuePlugin: FastifyPluginAsync = async (fastify) => {
   fastify.get('/v1/queue/next', { preHandler: authenticateApiKey }, async (_request, reply) => {
     const db = getDB();
 
-    // Atomic claim using UPDATE with subquery (SQLite compatible)
+    // Atomic claim using UPDATE with subquery (SQLite compatible).
+    // Claims older than an hour are taken again: a worker that crashed or gave up never releases its task.
     const claimed = await db.raw(`
       UPDATE queue_tasks
       SET status = 'claimed',
@@ -26,6 +27,7 @@ const queuePlugin: FastifyPluginAsync = async (fastify) => {
       WHERE id = (
         SELECT id FROM queue_tasks
         WHERE status = 'pending'
+           OR (status = 'claimed' AND claimed_at < datetime('now', '-1 hour'))
         ORDER BY priority DESC, created_at ASC
         LIMIT 1
       )
