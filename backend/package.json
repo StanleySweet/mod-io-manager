@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "rm -rf dist && tsc",
     "start": "NODE_ENV=development node dist/index.js",
     "migrate:latest": "tsx src/config/knexfile.ts && knex --knexfile src/config/knexfile.ts migrate:latest",
     "migrate:rollback": "knex --knexfile src/config/knexfile.ts migrate:rollback",
